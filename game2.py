@@ -7,7 +7,7 @@ import pygame
 from helpers2 import get_model, get_action
 
 FRAMES_PER_SECOND = 23
-WINDOW = (480, 640)
+WINDOW = (480, 640) 
 
 def main():
     pygame.init()
