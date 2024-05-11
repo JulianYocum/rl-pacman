@@ -1,5 +1,6 @@
 import pygame
 from helpers2 import get_model, get_action
+import gym
 
 FRAMES_PER_SECOND = 23
 HEIGHT = 640

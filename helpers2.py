@@ -17,6 +17,9 @@ from sample_factory.utils.attr_dict import AttrDict
 
 from sf_examples.atari.train_atari import parse_atari_args, register_atari_components
 
+from sample_factory.envs.env_utils import register_env
+from atari_utils import ATARI_ENVS, make_atari_env
+
 device = "cpu"
 
 def get_model(model_path):
@@ -25,7 +28,8 @@ def get_model(model_path):
     train_dir = "./models"
     argv = ["--algo=APPO", "--env=atari_mspacman", f"--experiment={experiment_name}", "--no_render", "--max_num_episodes=10", "--save_video", f"--train_dir={train_dir}"]
 
-    register_atari_components()
+    register_env("atari_mspacman", make_atari_env)
+
     cfg = parse_atari_args(argv=argv, evaluation=True)
     cfg = load_from_checkpoint(cfg)
 
