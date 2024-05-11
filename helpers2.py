@@ -22,8 +22,7 @@ from atari_utils import ATARI_ENVS, make_atari_env
 
 device = "cpu"
 
-def get_model(model_path):
-
+def get_env():
     experiment_name = "."
     train_dir = "./models"
     argv = ["--algo=APPO", "--env=atari_mspacman", f"--experiment={experiment_name}", "--no_render", "--max_num_episodes=10", "--save_video", f"--train_dir={train_dir}"]
@@ -44,7 +43,9 @@ def get_model(model_path):
     env = make_env_func_batched(
         cfg, env_config=AttrDict(worker_index=0, vector_index=0, env_id=0), render_mode="rgb_array"
     )
+    return env, cfg
 
+def get_model(model_path, env, cfg):
     actor_critic = create_actor_critic(cfg, env.observation_space, env.action_space)
     actor_critic.eval()
     actor_critic.model_to_device(device)
@@ -52,7 +53,7 @@ def get_model(model_path):
     checkpoint_dict = torch.load(model_path, map_location=device)
     actor_critic.load_state_dict(checkpoint_dict["model"])
 
-    return actor_critic, env
+    return actor_critic
 
 def get_action(actor_critic, obs):
 
