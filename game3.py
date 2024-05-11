@@ -27,10 +27,10 @@ def game_init():
     screen = pygame.display.set_mode(WINDOW)
     clock = pygame.time.Clock()
     
-    model_path = "models/best_expsticky2222.pth"
-    # model_path = "train_dir/psychopac5.pth"
-    # model_path = "train_dir/suicidepac.pth"
-    # model_path = "train_dir/survivorpac3.pth"
+    model_path = "models/winnerpac.pth"
+    # model_path = "models/psychopac.pth"
+    # model_path = "models/suicidepac.pth"
+    # model_path = "models/paranoidpac.pth"
     model, env = get_model(model_path)
     obs, info = env.reset()
     
