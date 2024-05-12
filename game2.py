@@ -1,4 +1,8 @@
+import sys
+
+import matplotlib.pyplot as plt
 import pygame
+
 from helpers2 import get_model, get_action, get_env
 
 FRAMES_PER_SECOND = 23
@@ -21,7 +25,7 @@ PACS_INIT = {
         'key': 'K',
         'pykey': pygame.K_k
     },
-    'suicidepac': {
+    'antipac': {
         'path': 'models/suicidepac.pth',
         'price': 50,
         'key': 'L',
@@ -43,7 +47,7 @@ def draw_start_screen(screen):
     screen.blit(text, text_rect)
     pygame.display.flip()
 
-def game_init():
+def game_init(graphing):
     pygame.init()
     screen = pygame.display.set_mode(WINDOW)
     clock = pygame.time.Clock()
@@ -52,7 +56,7 @@ def game_init():
     pacs = PACS_INIT.copy()
 
     for pac_name, pac_attrs in pacs.items():
-        pacs[pac_name]['purchased'] = False
+        pacs[pac_name]['purchased'] = False if not graphing else True
         pacs[pac_name]['model'] = get_model(pac_attrs['path'], env, cfg)
 
     obs, _ = env.reset()
@@ -95,7 +99,18 @@ def draw_death_screen(screen, pacs, money):
     return pacs, money
 
 def main():
-    init = game_init()
+    graphing = False
+    if "--graphing" in sys.argv:
+        graphing = True
+        if len(sys.argv) > sys.argv.index("--graphing") + 1:
+            graphing_pac = sys.argv[sys.argv.index("--graphing") + 1]
+            graphing_lives = False
+
+    graphing_lives = False
+    if "--graphing_lives" in sys.argv:
+        graphing_lives = True
+
+    init = game_init(graphing)
     screen = init['screen']
     clock = init['clock']
     env = init['env']
@@ -104,6 +119,8 @@ def main():
     pacs = init['pacs']
 
     playing = True
+    rewards = []
+    lives = []
     
     # wait at start screen until any key is pressed
     draw_start_screen(screen)
@@ -142,9 +159,14 @@ def main():
                     policy = models[key][1]
                     break
 
-        action = [action]
+        if graphing:
+            action = [get_action(pacs[graphing_pac]['model'], obs)]
+        else:
+            action = [action]
         obs, reward, done, _, info = env.step(action)
         money += int(reward.item())
+        rewards.append(reward.item()+rewards[-1] if rewards else reward.item())
+        lives.append(info[0]['lives'])
         frame = env.render()
         frame = pygame.surfarray.make_surface(frame)
         frame = pygame.transform.rotate(frame, -90)
@@ -169,16 +191,39 @@ def main():
                     pacs, money = draw_death_screen(screen, pacs, money)
                     pygame.display.flip()
                     for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            playing = True
+                        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                            death_screen_waiting = False
+                            playing = False
                         if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                             death_screen_waiting = False
             obs, info = env.reset()
 
         clock.tick(FRAMES_PER_SECOND)
-    
     env.close()
     pygame.quit()
 
+    if graphing:
+        fig, ax1 = plt.subplots()
+    
+        if graphing_lives:
+            ax1.plot(range(len(rewards)), rewards, label='Rewards', color='blue')
+            ax1.set_xlabel('Timesteps')
+            ax1.set_ylabel('Rewards', color='blue')
+            ax1.tick_params(axis='y', labelcolor='blue')
+            ax2 = ax1.twinx()
+            ax2.plot(range(len(lives)), lives, label='Lives', color='red')
+            ax2.set_ylabel('Lives', color='red')
+            ax2.tick_params(axis='y', labelcolor='red')
+            ax2.set_yticks([0, 1, 2, 3])
+        else:
+            ax1.plot(range(len(rewards)), rewards, label='Rewards')
+            ax1.set_xlabel('Timesteps')
+            ax1.set_ylabel('Rewards')
+            ax1.tick_params(axis='y')
+
+        andlives = "and Lives " if graphing_lives else ""
+        plt.title(f'{graphing_pac} Rewards {andlives}Over Time')
+        plt.show()
+    
 if __name__ == "__main__":
     main()
